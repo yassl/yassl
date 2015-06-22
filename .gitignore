@@ -2,12 +2,15 @@
 *.lo
 *.la
 *.o
+*.gz
+*.zip
 *.patch
 *.deps
 *.libs
 *.cache
 .dirstamp
 *.user
+tags
 build-aux/
 Makefile.in
 Makefile
