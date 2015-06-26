@@ -15,7 +15,10 @@ build-aux/
 Makefile.in
 Makefile
 config.*
+configure
 libtool
+m4/libtool.m4
+aclocal.m4
 examples/client/client
 examples/echoclient/echoclient
 examples/server/server
