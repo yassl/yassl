@@ -815,6 +815,14 @@ void SSL::set_random(const opaque* random, ConnectionEnd sender)
 // store client pre master secret
 void SSL::set_preMaster(const opaque* pre, uint sz)
 {
+    uint i(0);  // trim leading zeros
+    uint fullSz(sz);
+
+    while (i++ < fullSz && *pre == 0) {
+        sz--;
+        pre++;
+    }
+
     secure_.use_connection().AllocPreSecret(sz);
     memcpy(secure_.use_connection().pre_master_secret_, pre, sz);
 }
