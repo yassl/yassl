@@ -117,7 +117,8 @@ void ClientDiffieHellmanPublic::build(SSL& ssl)
     uint keyLength = dhClient.get_agreedKeyLength(); // pub and agree same
 
     alloc(keyLength, true);
-    dhClient.makeAgreement(dhServer.get_publicKey(), keyLength);
+    dhClient.makeAgreement(dhServer.get_publicKey(),
+                           dhServer.get_publicKeyLength());
     c16toa(keyLength, Yc_);
     memcpy(Yc_ + KEY_OFFSET, dhClient.get_publicKey(), keyLength);
 
