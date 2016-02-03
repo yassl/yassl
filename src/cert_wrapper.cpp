@@ -302,8 +302,11 @@ int CertManager::Validate()
         int bSz = (int)strlen(cert.GetBeforeDate()) + 1;
         int aSz = (int)strlen(cert.GetAfterDate()) + 1;
         peerX509_ = NEW_YS X509(cert.GetIssuer(), iSz, cert.GetCommonName(),
-                                sSz, cert.GetBeforeDate(), bSz,
-                                cert.GetAfterDate(), aSz);
+                             sSz, cert.GetBeforeDate(), bSz,
+                             cert.GetAfterDate(), aSz,
+                             cert.GetIssuerCnStart(), cert.GetIssuerCnLength(),
+                             cert.GetSubjectCnStart(), cert.GetSubjectCnLength()
+                            );
 
         if (err == TaoCrypt::SIG_OTHER_E && verifyCallback_) {
             X509_STORE_CTX store;
@@ -355,7 +358,9 @@ void CertManager::setPeerX509(X509* x)
 
     peerX509_ = NEW_YS X509(issuer->GetName(), issuer->GetLength(),
         subject->GetName(), subject->GetLength(), (const char*) before->data,
-        before->length, (const char*) after->data, after->length);
+        before->length, (const char*) after->data, after->length,
+        issuer->GetCnPosition(), issuer->GetCnLength(),
+        subject->GetCnPosition(), subject->GetCnLength());
 }
 
 
