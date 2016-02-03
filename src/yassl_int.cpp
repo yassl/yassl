@@ -2552,6 +2552,9 @@ ASN1_STRING* X509_NAME::GetEntry(int i)
     if (i != cnPosition_ || cnLen_ <= 0)   // only entry currently supported
         return 0;
 
+    if (cnLen_ > int(sz_-i))   // make sure there's room in read buffer
+        return 0;
+
     if (entry_.data)
         ysArrayDelete(entry_.data);
     entry_.data = NEW_YS byte[cnLen_+1];       // max size;
