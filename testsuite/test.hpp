@@ -4,7 +4,6 @@
 #define yaSSL_TEST_HPP
 
 #include "runtime.hpp"
-#include "openssl/ssl.h"   /* openssl compatibility test */
 #include "error.hpp"
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,6 +37,7 @@
 #endif
     #define SOCKET_T int
 #endif /* _WIN32 */
+#include "openssl/ssl.h"   /* openssl compatibility test */
 
 
 #ifdef _MSC_VER
