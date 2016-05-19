@@ -792,48 +792,68 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
         WIN32_FIND_DATA FindFileData;
         HANDLE hFind;
 
-        char name[MAX_PATH + 1];  // directory specification
-        strncpy(name, path, MAX_PATH - 3);
+        char* name = NEW_YS char[strlen(path) + 4];  // directory specification
+        int nameSz = strlen(path) + 4; // 4 for extra space needed with string
+        strncpy(name, path, nameSz - 3);
         strncat(name, "\\*", 3);
 
         hFind = FindFirstFile(name, &FindFileData);
-        if (hFind == INVALID_HANDLE_VALUE) return SSL_BAD_PATH;
+        if (hFind == INVALID_HANDLE_VALUE) {
+            ysArrayDelete(name);
+            return SSL_BAD_PATH;
+        }
 
         do {
-            if (FindFileData.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY) {
-                strncpy(name, path, MAX_PATH - 2 - HALF_PATH);
+            if (!(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+                if ((int)strlen(path) + 4 +
+                                 (int)strlen(FindFileData.cFileName) > nameSz) {
+                    ysArrayDelete(name);
+                    nameSz = strlen(path) + 4 + strlen(FindFileData.cFileName);
+                    name = NEW_YS char[nameSz];
+                }
+                memset(name, 0, nameSz);
+                strncpy(name, path, nameSz);
                 strncat(name, "\\", 2);
-                strncat(name, FindFileData.cFileName, HALF_PATH);
+                strncat(name, FindFileData.cFileName,
+                                                     nameSz - strlen(path) - 1);
                 ret = read_file(ctx, name, SSL_FILETYPE_PEM, CA);
             }
         } while (ret == SSL_SUCCESS && FindNextFile(hFind, &FindFileData));
 
+        ysArrayDelete(name);
         FindClose(hFind);
 
 #else   // _WIN32
-
-        const int MAX_PATH = 260;
-
         DIR* dir = opendir(path);
         if (!dir) return SSL_BAD_PATH;
 
         struct dirent* entry;
         struct stat    buf;
-        char           name[MAX_PATH + 1];
+        char* name = NEW_YS char[strlen(path) + 3];  // directory specification
+        int nameSz = strlen(path) + 3;
 
         while (ret == SSL_SUCCESS && (entry = readdir(dir))) {
-            strncpy(name, path, MAX_PATH - 1 - HALF_PATH);
+            if ((int)strlen(path) + (int)strlen(entry->d_name) + 3 > nameSz) {
+                ysArrayDelete(name);
+                nameSz = strlen(path) + 3 + strlen(entry->d_name);
+                name = NEW_YS char[nameSz];
+            }
+            memset(name, 0, nameSz);
+            strncpy(name, path, nameSz);
             strncat(name, "/", 1);
-            strncat(name, entry->d_name, HALF_PATH);
+            strncat(name, entry->d_name, nameSz - strlen(path) - 1);
+
             if (stat(name, &buf) < 0) {
+                ysArrayDelete(name);
                 closedir(dir);
                 return SSL_BAD_STAT;
             }
-     
+
             if (S_ISREG(buf.st_mode))
                 ret = read_file(ctx, name, SSL_FILETYPE_PEM, CA);
         }
 
+        ysArrayDelete(name);
         closedir(dir);
 
 #endif
