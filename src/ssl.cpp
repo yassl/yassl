@@ -781,7 +781,6 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
                                   const char* path)
 {
     int       ret = SSL_SUCCESS;
-    const int HALF_PATH = 128;
 
     if (file) ret = read_file(ctx, file, SSL_FILETYPE_PEM, CA);
 
@@ -792,10 +791,14 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
         WIN32_FIND_DATA FindFileData;
         HANDLE hFind;
 
-        char* name = NEW_YS char[strlen(path) + 4];  // directory specification
-        int nameSz = strlen(path) + 4; // 4 for extra space needed with string
-        strncpy(name, path, nameSz - 3);
-        strncat(name, "\\*", 3);
+        const int DELIMITER_SZ      = 2;
+        const int DELIMITER_STAR_SZ = 3;
+        int pathSz = (int)strlen(path);
+        int nameSz = pathSz + DELIMITER_STAR_SZ + 1; // plus 1 for terminator
+        char* name = NEW_YS char[nameSz];  // directory specification
+        memset(name, 0, nameSz);
+        strncpy(name, path, nameSz - DELIMITER_STAR_SZ - 1);
+        strncat(name, "\\*", DELIMITER_STAR_SZ);
 
         hFind = FindFirstFile(name, &FindFileData);
         if (hFind == INVALID_HANDLE_VALUE) {
@@ -805,17 +808,18 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
 
         do {
             if (!(FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                if ((int)strlen(path) + 4 +
-                                 (int)strlen(FindFileData.cFileName) > nameSz) {
+                int curSz = (int)strlen(FindFileData.cFileName);
+                if (pathSz + curSz + DELIMITER_SZ + 1 > nameSz) {
                     ysArrayDelete(name);
-                    nameSz = strlen(path) + 4 + strlen(FindFileData.cFileName);
+                    // plus 1 for terminator
+                    nameSz = pathSz + curSz + DELIMITER_SZ + 1;
                     name = NEW_YS char[nameSz];
                 }
                 memset(name, 0, nameSz);
-                strncpy(name, path, nameSz);
-                strncat(name, "\\", 2);
+                strncpy(name, path, nameSz - curSz - DELIMITER_SZ - 1);
+                strncat(name, "\\", DELIMITER_SZ);
                 strncat(name, FindFileData.cFileName,
-                                                     nameSz - strlen(path) - 1);
+                                            nameSz - pathSz - DELIMITER_SZ - 1);
                 ret = read_file(ctx, name, SSL_FILETYPE_PEM, CA);
             }
         } while (ret == SSL_SUCCESS && FindNextFile(hFind, &FindFileData));
@@ -829,19 +833,22 @@ int SSL_CTX_load_verify_locations(SSL_CTX* ctx, const char* file,
 
         struct dirent* entry;
         struct stat    buf;
-        char* name = NEW_YS char[strlen(path) + 3];  // directory specification
-        int nameSz = strlen(path) + 3;
+        const int DELIMITER_SZ = 1;
+        int pathSz = (int)strlen(path);
+        int nameSz = pathSz + DELIMITER_SZ + 1; //plus 1 for null terminator
+        char* name = NEW_YS char[nameSz];  // directory specification
 
         while (ret == SSL_SUCCESS && (entry = readdir(dir))) {
-            if ((int)strlen(path) + (int)strlen(entry->d_name) + 3 > nameSz) {
+            int curSz = (int)strlen(entry->d_name);
+            if (pathSz + curSz + DELIMITER_SZ + 1 > nameSz) {
                 ysArrayDelete(name);
-                nameSz = strlen(path) + 3 + strlen(entry->d_name);
+                nameSz = pathSz + DELIMITER_SZ + curSz + 1;
                 name = NEW_YS char[nameSz];
             }
             memset(name, 0, nameSz);
-            strncpy(name, path, nameSz);
-            strncat(name, "/", 1);
-            strncat(name, entry->d_name, nameSz - strlen(path) - 1);
+            strncpy(name, path, nameSz - curSz - 1);
+            strncat(name, "/",  DELIMITER_SZ);
+            strncat(name, entry->d_name, nameSz - pathSz - DELIMITER_SZ - 1);
 
             if (stat(name, &buf) < 0) {
                 ysArrayDelete(name);
