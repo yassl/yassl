@@ -1217,17 +1217,17 @@ word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz)
     }
     word32 rLen = GetLength(source);
     if (rLen != 20) {
-        if (rLen == 21) {       // zero at front, eat
+        while (rLen > 20 && source.remaining() > 0) {  // zero's at front, eat
             source.next();
             --rLen;
         }
-        else if (rLen == 19) {  // add zero to front so 20 bytes
-            decoded[0] = 0;
-            decoded++;
-        }
-        else {
-            source.SetError(DSA_SZ_E);
-            return 0;
+        if (rLen < 20) { // add zero's to front so 20 bytes
+            word32 tmpLen = rLen;
+            while (tmpLen < 20) {
+                decoded[0] = 0;
+                decoded++;
+                tmpLen++;
+            }
         }
     }
     memcpy(decoded, source.get_buffer() + source.get_index(), rLen);
@@ -1240,17 +1240,17 @@ word32 DecodeDSA_Signature(byte* decoded, const byte* encoded, word32 sz)
     }
     word32 sLen = GetLength(source);
     if (sLen != 20) {
-        if (sLen == 21) {
-            source.next();          // zero at front, eat
+        while (sLen > 20 && source.remaining() > 0) {
+            source.next();          // zero's at front, eat
             --sLen;
         }
-        else if (sLen == 19) {
-            decoded[rLen] = 0;      // add zero to front so 20 bytes
-            decoded++;
-        }
-        else {
-            source.SetError(DSA_SZ_E);
-            return 0;
+        if (sLen < 20) { // add zero's to front so 20 bytes
+            word32 tmpLen = sLen;
+            while (tmpLen < 20) {
+                decoded[rLen] = 0;
+                decoded++;
+                tmpLen++;
+            }
         }
     }
     memcpy(decoded + rLen, source.get_buffer() + source.get_index(), sLen);
