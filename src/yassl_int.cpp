@@ -1407,12 +1407,17 @@ void SSL::matchSuite(const opaque* peer, uint length)
     // start with best, if a match we are good, Ciphers are at odd index
     // since all SSL and TLS ciphers have 0x00 first byte
     for (uint i = 1; i < secure_.get_parms().suites_size_; i += 2)
-        for (uint j = 1; j < length; j+= 2)
-            if (secure_.use_parms().suites_[i] == peer[j]) {
+        for (uint j = 0; (j + 1) < length; j+= 2) {
+            if (peer[j] != 0x00) {
+                continue; // only 0x00 first byte supported
+            }
+
+            if (secure_.use_parms().suites_[i] == peer[j + 1]) {
                 secure_.use_parms().suite_[0] = 0x00;
-                secure_.use_parms().suite_[1] = peer[j];
+                secure_.use_parms().suite_[1] = peer[j + 1];
                 return;
             }
+        }
 
     SetError(match_error);
 }
