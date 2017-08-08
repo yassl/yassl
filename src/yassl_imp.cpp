@@ -1586,6 +1586,10 @@ void ServerHello::Process(input_buffer& input, SSL& ssl)
         ssl.SetError(badVersion_error);
         return;
     }
+    if (cipher_suite_[0] != 0x00) {
+        ssl.SetError(unknown_cipher);
+        return;
+    }
     ssl.set_pending(cipher_suite_[1]);
     ssl.set_random(random_, server_end);
     if (id_len_)
