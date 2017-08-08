@@ -1,4 +1,4 @@
-AC_INIT([yassl],[2.4.2],[http://www.yassl.com])  # !!! aslo change in ssl.h !!!
+AC_INIT([yassl],[2.4.4],[http://www.yassl.com])  # !!! aslo change in ssl.h !!!
 
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([m4])
